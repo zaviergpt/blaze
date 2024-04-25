@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Geologica:wght@100..900&display=swap');
+            * {
+                border: 0;
+                padding: 0;
+                margin: 0;
+                outline: none;
+                user-select: none;
+                font-family: "Geologica", sans-serif;
+            }
+            body {
+                background-color: #111111;
+            }
+        </style>
+    </head>
+    <body>
+        <ul>
+            <li>
+                <img src="/media/aWNvbi5wbm">
+                <div class="info">
+                    <div class="heading">Login via the Blaze App</div>
+                </div>
+            </li>
+        </ul>
+        
+    </body>
+    <script>
+        window.addEventListener("load", async () => {
+            if (navigator.userAgent.match(/Android/i) || navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
+                document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="/media/bWFuaWZlc3" />')
+            }
+            /*
+            if (localStorage.getItem("session")) {
+                request = await (await fetch("/accounts/authorize", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": btoa(JSON.stringify({
+                            token: localStorage.getItem("session")
+                        }))
+                    }
+                })).json()
+                if (request.token) {
+
+                }
+            }
+            */
+        })
+    </script>
+</html>
