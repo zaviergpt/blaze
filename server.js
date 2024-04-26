@@ -5,6 +5,8 @@ const http = require("http")
 const cors = require("cors")
 const express = require("express")
 
+const QRCode = require("qrcode")
+
 const { WebSocketServer } = require("ws")
 const { v4: uuidv4 } = require("uuid")
 
@@ -15,11 +17,6 @@ const io = new WebSocketServer({ noServer: true })
 const router = {
     media: express.Router(),
     accounts: express.Router()
-}
-
-let storage = {
-    cached: [],
-    PWA: fs.readdirSync("./PWA").map((item) => ([btoa(item).slice(0, 10), __dirname + "/PWA/" + item]))
 }
 
 app.use(cors())
@@ -38,16 +35,71 @@ router.media.use("/:id", (request, response) => {
     }
 })
 
+router.accounts.post("/authorize", (request, response) => {
+    if (request.headers["authorization"]) {
+        found = null
+        data = JSON.parse(atob(request.headers["authorization"]))
+        if (data.token) {
+            storage.accounts.forEach((account) => {
+                if (account.session === data.token) {
+                    found = account.session
+                }
+            })
+        } else if (data.code) {
+            code = JSON.parse(atob(data.code))
+            storage.accounts.forEach((account) => {
+                if (account.username === code.username) {
+                    account.session = uuidv4()
+                    found = account.session
+                }
+            })
+        }
+        response.json({ token: found })
+    }
+})
+
 app.get("/", (request, response) => {
     response.sendFile(__dirname + "/PWA/index.html")
 })
 
+io.on("authentication", (socket, request) => {
+    socket.on("message", (data) => {
+        packet = JSON.parse(data)
+        console.log(packet)
+    })
+    QRCode.toString(request.headers["sec-websocket-key"], {
+        errorCorrectionLevel: "H",
+        type: "svg"
+    }, (error, data) => {
+        socket.send(JSON.stringify({
+            type: "qrcode",
+            data: data
+        }))
+    })
+})
+
 server.on("upgrade", (request, socket, head) => {
     io.handleUpgrade(request, socket, head, (socket, request) => {
-        console.log(request.url)
+        if (request.url.includes("?")) {
+
+        } else {
+            io.emit("authentication", socket, request)
+        }
     })
 })
 
 server.listen(5000, () => {
-    console.log(storage)
+    if (!fs.existsSync("./storage/accounts.json")) {
+        if (!fs.existsSync("./storage")) {
+            fs.mkdirSync("./storage")
+        }
+        fs.writeFileSync("./storage/accounts.json", JSON.stringify([
+            { id: uuidv4().split("-")[0], username: "zcyx09", session: null }
+        ]))
+    }
+    storage = {
+        accounts: JSON.parse(fs.readFileSync("./storage/accounts.json")),
+        cached: [],
+        PWA: fs.readdirSync("./PWA").map((item) => ([btoa(item).slice(0, 10), __dirname + "/PWA/" + item]))
+    }
 })
