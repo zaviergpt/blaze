@@ -2,6 +2,7 @@
 <html>
     <head>
         <title></title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Geologica:wght@100..900&display=swap');
             * {
@@ -18,37 +19,64 @@
         </style>
     </head>
     <body>
-        <ul>
-            <li>
-                <img src="/media/aWNvbi5wbm">
-                <div class="info">
-                    <div class="heading">Login via the Blaze App</div>
-                </div>
-            </li>
-        </ul>
-        
+        <div id="qrcode"></div>
     </body>
     <script>
         window.addEventListener("load", async () => {
             if (navigator.userAgent.match(/Android/i) || navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
-                document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="/media/bWFuaWZlc3" />')
-            }
-            /*
-            if (localStorage.getItem("session")) {
-                request = await (await fetch("/accounts/authorize", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": btoa(JSON.stringify({
-                            token: localStorage.getItem("session")
-                        }))
+                if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+                    if (localStorage.getItem("session")) {
+                        request = await (await fetch("/accounts/authorize", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": btoa(JSON.stringify({
+                                    token: localStorage.getItem("session")
+                                }))
+                            }
+                        })).json()
+                        if (request.token) {
+                            socket = new WebSocket("ws://" + window.location.origin.split("://")[1] + "?id=" + request.token.split("-")[0])
+                            socket.addEventListener("open", () => {
+                                socket.addEventListener("message", ({ data }) => {
+                                    console.log(data)
+                                })
+                            })
+                        } else {
+                            localStorage.removeItem("session")
+                            window.location.reload()
+                        }
+                    } else {
+                        request = await (await fetch("/accounts/authorize", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": btoa(JSON.stringify({
+                                    code: btoa(JSON.stringify({
+                                        username: "zcyx09"
+                                    }))
+                                }))
+                            }
+                        })).json()
+                        if (request.token) {
+                            localStorage.setItem("session", request.token)
+                            window.location.reload()
+                        }
                     }
-                })).json()
-                if (request.token) {
-
                 }
+                document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="/media/bWFuaWZlc3" />')
+            } else {
+                socket = new WebSocket("ws://" + window.location.origin.split("://")[1])
+                socket.addEventListener("open", () => {
+                    socket.addEventListener("message", ({ data }) => {
+                        packet = JSON.parse(data)
+                        if (packet.type === "qrcode") {
+                            document.getElementById("qrcode").innerHTML = packet.data
+                        }
+                    })
+                })
+                /* Sends a QR Code */
             }
-            */
         })
     </script>
 </html>
